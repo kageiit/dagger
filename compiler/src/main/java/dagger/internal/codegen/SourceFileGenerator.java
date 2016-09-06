@@ -18,21 +18,18 @@ package dagger.internal.codegen;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
-import com.google.common.io.CharSink;
-import com.google.common.io.CharSource;
-import com.google.googlejavaformat.java.Formatter;
-import com.google.googlejavaformat.java.FormatterException;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import java.io.IOException;
-import java.io.Writer;
+
 import javax.annotation.Generated;
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
 import javax.lang.model.util.Elements;
 import javax.tools.JavaFileObject;
+import java.io.IOException;
+import java.io.Writer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -71,19 +68,17 @@ abstract class SourceFileGenerator<T> {
       JavaFile javaFile = buildJavaFile(generatedTypeName, type.get());
 
       final JavaFileObject sourceFile = filer.createSourceFile(
-          generatedTypeName.toString(),
-          Iterables.toArray(javaFile.typeSpec.originatingElements, Element.class));
+              generatedTypeName.toString(),
+              Iterables.toArray(javaFile.typeSpec.originatingElements, Element.class));
+
       try {
-        new Formatter().formatSource(
-            CharSource.wrap(javaFile.toString()),
-            new CharSink() {
-              @Override public Writer openStream() throws IOException {
-                return sourceFile.openWriter();
-              }
-            });
-      } catch (FormatterException e) {
+        Writer writer = sourceFile.openWriter();
+        writer.write(javaFile.toString());
+        writer.flush();
+        writer.close();
+      } catch (IOException e) {
         throw new SourceFileGenerationException(
-            Optional.of(generatedTypeName), e, getElementForErrorReporting(input));
+                Optional.of(generatedTypeName), e, getElementForErrorReporting(input));
       }
     } catch (Exception e) {
       // if the code above threw a SFGE, use that
